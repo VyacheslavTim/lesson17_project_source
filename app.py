@@ -5,6 +5,8 @@ from flask_restx import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import Schema, fields
 
+from create_data import Movie, Director, Genre
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -18,6 +20,8 @@ class MovieSchema(Schema):
     trailer = fields.Str()
     year = fields.Int()
     rating = fields.Float()
+    genre_id = fields.Int()
+    director_id = fields.Int()
 
 
 class DirectorSchema(Schema):
@@ -90,11 +94,10 @@ class MovieView(Resource):
 
         return "", 204
 
-
     def delete(self, uid: int):
         deleted_rows = db.session.query(Movie).get(uid)
 
-        if deleted_rows != 1:
+        if not deleted_rows:
             return "", 400
 
         db.session.delete(deleted_rows)
@@ -118,16 +121,17 @@ class DirectorsView(Resource):
 
         return "New director added", 201
 
+
 @director_ns.route("/<int:uid>")
 class DirectorsView(Resource):
     def get(self, uid: int):
-        director = db.session.query(Movie).get(uid)
+        director = db.session.query(Director).get(uid)
         if not director:
             return "Director not found", 404
         return director_schema.dump(director), 200
 
     def put(self, uid: int):
-        updated_rows = db.session.query(Movie).filter(Movie.id == uid).update(request.json)
+        updated_rows = db.session.query(Director).filter(Director.id == uid).update(request.json)
 
         if updated_rows != 1:
             return "", 400
@@ -139,7 +143,7 @@ class DirectorsView(Resource):
     def delete(self, uid: int):
         deleted_rows = db.session.query(Director).get(uid)
 
-        if deleted_rows != 1:
+        if not deleted_rows:
             return "", 400
 
         db.session.delete()
@@ -163,13 +167,14 @@ class GenresView(Resource):
 
         return "New genre added", 201
 
+
 @genre_ns.route("/<int:uid>")
 class GenresView(Resource):
     def get(self, uid: int):
         genre = db.session.query(Genre).get(uid)
         if not genre:
             return "Director not found", 404
-        return director_schema.dump(genre), 200
+        return genre_schema.dump(genre), 200
 
     def put(self, uid: int):
         updated_rows = db.session.query(Movie).filter(Movie.id == uid).update(request.json)
@@ -184,14 +189,13 @@ class GenresView(Resource):
     def delete(self, uid: int):
         deleted_rows = db.session.query(Genre).get(uid)
 
-        if deleted_rows != 1:
+        if not deleted_rows:
             return "", 400
 
         db.session.delete()
         db.session.commit()
 
         return "", 204
-
 
 
 if __name__ == '__main__':
